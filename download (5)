@@ -1,0 +1,62 @@
+/**
+ * APP ROOT — Biophilic Minimalism
+ * Routes: Home (Dashboard), Log Habits, Progress, Goals
+ */
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch } from "wouter";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { EcoProvider } from "./contexts/EcoContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { AdProvider } from "./contexts/AdContext";
+import { BottomNav } from "./components/BottomNav";
+import { NotificationCenter } from "./components/NotificationCenter";
+import Home from "./pages/Home";
+import LogHabits from "./pages/LogHabits";
+import Progress from "./pages/Progress";
+import Goals from "./pages/Goals";
+import Onboarding from "./pages/Onboarding";
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/onboarding" component={Onboarding} />
+      <Route path="/" component={Home} />
+      <Route path="/log" component={LogHabits} />
+      <Route path="/progress" component={Progress} />
+      <Route path="/goals" component={Goals} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <OnboardingProvider>
+          <EcoProvider>
+            <NotificationsProvider>
+              <AdProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <div className="max-w-lg mx-auto min-h-screen relative">
+                    <Router />
+                    <BottomNav />
+                    <NotificationCenter />
+                  </div>
+                </TooltipProvider>
+              </AdProvider>
+            </NotificationsProvider>
+          </EcoProvider>
+        </OnboardingProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;

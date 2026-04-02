@@ -1,0 +1,320 @@
+/**
+ * HOME / DASHBOARD PAGE — Biophilic Minimalism
+ * Shows today's score, weekly summary, streak, and quick actions.
+ * Dark text on light sage background.
+ */
+import { useEffect } from 'react';
+import { useEco } from '@/contexts/EcoContext';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+import { pageEvents } from '@/lib/analytics';
+import { useStreakNotifications } from '@/hooks/useStreakNotifications';
+import { BannerAd } from '@/components/BannerAd';
+import {
+  getImpactCategory,
+  getWeeklyAverage,
+  getWeeklyLogs,
+  getTodayString,
+} from '@/lib/ecoStore';
+import { ScoreRing } from '@/components/ScoreRing';
+import { Link, useLocation } from 'wouter';
+import { ArrowRight, Flame, Leaf, TrendingDown, TrendingUp } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+const HERO_BG = 'https://d2xsxph8kpxj0f.cloudfront.net/310519663491038184/8mo3sACQc5FWLikvSwLvEv/eco-hero-bg-BXsFzNLcXHvo4ZVUKqsU6H.webp';
+const FOREST_IMG = 'https://d2xsxph8kpxj0f.cloudfront.net/310519663491038184/8mo3sACQc5FWLikvSwLvEv/eco-dashboard-card-oGJiCXk7P6AwDXhRfH9j92.webp';
+
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export default function Home() {
+  const { hasCompletedOnboarding } = useOnboarding();
+  const [, navigate] = useLocation();
+  const { state } = useEco();
+  const today = getTodayString();
+
+  // Redirect first-time users to onboarding
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      navigate('/onboarding');
+    }
+  }, [hasCompletedOnboarding, navigate]);
+
+  // Track dashboard view
+  useEffect(() => {
+    if (hasCompletedOnboarding) {
+      pageEvents.dashboardViewed();
+    }
+  }, [hasCompletedOnboarding]);
+
+  // Initialize streak notifications
+  useStreakNotifications();
+
+  // Show loading state while redirecting
+  if (!hasCompletedOnboarding) {
+    return null;
+  }
+
+  // Dashboard content is shown below
+
+  const todayLog = state.logs.find((l) => l.date === today);
+  const weeklyLogs = getWeeklyLogs(state.logs);
+  const weeklyAvg = getWeeklyAverage(state.logs);
+  const weeklyAvgCategory = getImpactCategory(weeklyAvg);
+
+  const chartData = weeklyLogs.map((log, i) => ({
+    day: DAY_LABELS[new Date(log.date + 'T00:00:00').getDay() === 0 ? 6 : new Date(log.date + 'T00:00:00').getDay() - 1] || `D${i + 1}`,
+    score: log.score,
+  }));
+
+  const lastTwo = weeklyLogs.slice(-2);
+  const trend =
+    lastTwo.length === 2
+      ? lastTwo[1].score - lastTwo[0].score
+      : 0;
+
+  return (
+    <>
+      <div className="min-h-screen pb-24">
+      {/* Hero Header */}
+      <div
+        className="relative overflow-hidden"
+        style={{
+          background: `url(${HERO_BG}) center/cover no-repeat`,
+          minHeight: 220,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-[oklch(0.97_0.012_145)/95]" />
+        <div className="relative z-10 px-5 pt-12 pb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Leaf size={18} className="text-primary" strokeWidth={2} />
+            <span className="text-xs font-semibold text-primary uppercase tracking-widest">
+              Eco Tracker
+            </span>
+          </div>
+          <h1 className="font-['Fraunces'] text-3xl font-black text-foreground leading-tight">
+            Your Green<br />
+            <span className="italic text-primary">Journey</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-4 -mt-4 space-y-4">
+        {/* Today's Score Card */}
+        <div className="eco-card p-5 animate-fade-up">
+          {todayLog ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">
+                  Today's Score
+                </p>
+                <ScoreRing
+                  score={todayLog.score}
+                  category={todayLog.category}
+                  size={140}
+                  animate={false}
+                />
+              </div>
+              <div className="flex-1 pl-6 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Transport</p>
+                  <p className="text-sm font-semibold capitalize">{todayLog.transport}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Food</p>
+                  <p className="text-sm font-semibold capitalize">{todayLog.food}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Energy</p>
+                  <p className="text-sm font-semibold capitalize">{todayLog.energy}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Shopping</p>
+                  <p className="text-sm font-semibold capitalize">{todayLog.shopping}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-4 gap-4">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ background: 'oklch(0.93 0.04 148)' }}
+              >
+                <Leaf size={36} className="text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="font-['Fraunces'] font-bold text-lg text-foreground">
+                  No log yet today
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Track your habits to see your eco score
+                </p>
+              </div>
+              <Link href="/log">
+                <button className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">
+                  Log Today's Habits
+                  <ArrowRight size={16} />
+                </button>
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-3 animate-fade-up animate-fade-up-delay-1">
+          <div className="eco-card p-4 text-center">
+            <p className="text-2xl font-['Fraunces'] font-black text-primary">{weeklyAvg}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Weekly Avg</p>
+          </div>
+          <div className="eco-card p-4 text-center">
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-2xl font-['Fraunces'] font-black text-foreground">
+                {state.logs.length}
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Days Logged</p>
+          </div>
+          <div className="eco-card p-4 text-center">
+            <div className="flex items-center justify-center gap-1">
+              <Flame size={18} className="text-[oklch(0.72_0.14_75)]" />
+              <p className="text-2xl font-['Fraunces'] font-black text-[oklch(0.72_0.14_75)]">
+                {state.goal?.streakCount ?? 0}
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium">Day Streak</p>
+          </div>
+        </div>
+
+        {/* Trend indicator */}
+        {trend !== 0 && (
+          <div className={`eco-card p-4 flex items-center gap-3 animate-fade-up animate-fade-up-delay-2 ${
+            trend < 0 ? 'border-l-4 border-l-[oklch(0.42_0.12_148)]' : 'border-l-4 border-l-[oklch(0.72_0.14_75)]'
+          }`}>
+            {trend < 0 ? (
+              <TrendingDown size={20} className="text-primary flex-shrink-0" />
+            ) : (
+              <TrendingUp size={20} className="text-[oklch(0.72_0.14_75)] flex-shrink-0" />
+            )}
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {trend < 0 ? `Score down ${Math.abs(trend)} pts` : `Score up ${trend} pts`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {trend < 0 ? 'Great improvement from yesterday!' : 'Try to reduce your impact tomorrow.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Weekly Chart */}
+        {chartData.length > 1 && (
+          <div className="eco-card p-5 animate-fade-up animate-fade-up-delay-3">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-['Fraunces'] font-bold text-base text-foreground">
+                7-Day Trend
+              </h2>
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full text-white ${
+                weeklyAvgCategory === 'Low' ? 'bg-primary' :
+                weeklyAvgCategory === 'Medium' ? 'bg-[oklch(0.72_0.14_75)]' :
+                'bg-destructive'
+              }`}>
+                {weeklyAvgCategory} Impact
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="oklch(0.42 0.12 148)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="oklch(0.42 0.12 148)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: 10, fill: 'oklch(0.52 0.06 148)' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: 'oklch(0.52 0.06 148)' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: 'oklch(0.995 0.005 145)',
+                    border: '1px solid oklch(0.88 0.04 148)',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontFamily: 'Plus Jakarta Sans',
+                  }}
+                  formatter={(v: number) => [`${v} pts`, 'Score']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke="oklch(0.42 0.12 148)"
+                  strokeWidth={2.5}
+                  fill="url(#scoreGrad)"
+                  dot={{ r: 4, fill: 'oklch(0.42 0.12 148)', strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: 'oklch(0.42 0.12 148)' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Forest Card CTA */}
+        <div
+          className="relative overflow-hidden rounded-2xl animate-fade-up animate-fade-up-delay-4"
+          style={{ minHeight: 140 }}
+        >
+          <img
+            src={FOREST_IMG}
+            alt="Forest path"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/20" />
+          <div className="relative z-10 p-5 flex flex-col justify-end h-full" style={{ minHeight: 140 }}>
+            <p className="font-['Fraunces'] font-bold text-white text-lg leading-tight">
+              Every small step<br />
+              <span className="italic">shapes the planet.</span>
+            </p>
+            <Link href="/log">
+              <button className="mt-3 flex items-center gap-1.5 text-white text-sm font-semibold hover:gap-3 transition-all">
+                Log today's habits <ArrowRight size={14} />
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Goal Summary */}
+        {state.goal && (
+          <div className="eco-card p-4 flex items-center gap-4 animate-fade-up animate-fade-up-delay-5">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'oklch(0.93 0.04 148)' }}
+            >
+              <Flame size={22} className="text-[oklch(0.72_0.14_75)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground font-medium">Active Goal</p>
+              <p className="text-sm font-semibold text-foreground capitalize">
+                {state.goal.type === 'transport'
+                  ? 'Reduce transport emissions'
+                  : state.goal.type === 'food'
+                  ? 'Eat less meat'
+                  : 'Lower energy usage'}
+              </p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="font-['Fraunces'] font-black text-2xl text-[oklch(0.72_0.14_75)]">
+                {state.goal.streakCount}
+              </p>
+              <p className="text-[10px] text-muted-foreground">day streak</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+    <BannerAd />
+    </>
+  );
+}
