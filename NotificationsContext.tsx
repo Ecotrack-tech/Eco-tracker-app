@@ -3,7 +3,7 @@
  * Displays stacked notifications with smooth animations
  */
 import { useState } from 'react';
-import { useNotifications } from ./NotificationsContext
+import { useNotifications } from "./NotificationsContext";
 import { X, Share2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { ShareModal } from './ShareModal';
