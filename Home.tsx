@@ -3,9 +3,9 @@
  * Manages streak-based notification logic and triggers
  */
 import { useEffect, useRef } from 'react';
-import { useNotifications } from '@/contexts/NotificationsContext';
-import { useEco } from '@/contexts/EcoContext';
-import { getTodayString } from '@/lib/ecoStore';
+import { useNotifications } from "./NotificationsContext";
+import { useEco } from "./EcoContext";
+import { getTodayString } from "./ecoStore";
 import {
   createStreakWarningNotification,
   createStreakLostNotification,
